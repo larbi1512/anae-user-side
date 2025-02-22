@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Button from "../components/Button";
 import bot from '../assets/images/bot3.svg';
 import ChatbotMini from './chatbot/chatbotmini.js';
-import { searchActivities } from "../utils/mockApi";
+import { searchActivities, getIsLoading } from "../utils/mockApi";
 import Logo from "../../public/logo1.png";
 import Navbar from "../components/NavBar.js";
 
@@ -40,18 +40,21 @@ const Activity: React.FC = () => {
         setSearchTerm(value);
         setIsSearching(true);
 
-        // Only search if the query is different from the last searched query
-        if (value !== lastSearchedQuery) {
+        if (value.length < 4) {
+            setSearchResults([]);
+            setIsSearching(false);
+            return;
+        }
+
+        // Only search if the query is different from the last searched query and no request is pending
+        if (value !== lastSearchedQuery && !getIsLoading()) {
             try {
                 const results = await searchActivities(value);
                 setSearchResults(results);
-                setLastSearchedQuery(value);  // Update last searched query
+                setLastSearchedQuery(value);
             } catch (error) {
                 console.error('Error searching activities:', error);
             }
-        } else if (value.length === 0) {
-            setSearchResults([]);
-            setLastSearchedQuery("");  // Reset last searched query
         }
         setIsSearching(false);
     };

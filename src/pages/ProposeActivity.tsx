@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/NavBar";
 import InputField from "../components/InputField";
@@ -7,10 +7,10 @@ import TextArea from "../components/TextArea";
 import Checkbox from "../components/CheckBox";
 import Button from "../components/Button";
 import Logo from "../../public/logo1.png";
-import bot from '../assets/images/bot3.svg';
-import ChatbotMini from './chatbot/chatbotmini.js';
-import { searchActivities } from "../utils/mockApi";
+import bot from "../assets/images/bot3.svg";
+import ChatbotMini from "./chatbot/chatbotmini.js";
 import Headcopied from '../components/Head'
+import { searchActivities, getIsLoading } from "../utils/mockApi";
 
 const ProposeActivity: React.FC = () => {
     const navigate = useNavigate();
@@ -21,23 +21,61 @@ const ProposeActivity: React.FC = () => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [hasSuggestions, setHasSuggestions] = useState(false);  // New state
     const [lastSearchedQuery, setLastSearchedQuery] = useState("");  // Add this state
+    const [activite, setActivite] = useState("");
 
-    const toggleChatbot = () => {
-        setIsChatbotOpen(!isChatbotOpen);
+    const toggleChatbot = () => setIsChatbotOpen(!isChatbotOpen);
+
+    // Dummy data for suggestions (replace with API fetch logic)
+    const allActivities = [
+        "Prédictions météorologiques",
+        "Conseil en management",
+        "Formation continue en informatique",
+        "Développement web",
+        "Analyse de données",
+    ];
+
+    // Update suggestions as user types
+    useEffect(() => {
+        if (activite) {
+            const filtered = allActivities.filter((activity) =>
+                activity.toLowerCase().includes(activite.toLowerCase())
+            );
+            setSuggestions(filtered);
+            console.log("filtered", filtered);
+        } else {
+            setSuggestions([]);
+        }
+    }, [activite]);
+
+    // Handle activity selection
+    const handleSelectActivity = (activity: string) => {
+        if (!selectedActivities.includes(activity) && selectedActivities.length < 5) {
+            setSelectedActivities((prev) => [...prev, activity]);
+            setActivite(""); // Clear input after selection
+            setSuggestions([]);
+            console.log("selectedActivities", selectedActivities);
+        }
     };
+
 
     const handleActivityInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setActivityInput(value);
 
-        // Only search if the query is different from the last searched query
-        if (value !== lastSearchedQuery) {
+        if (value.length < 4) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        // Only search if the query is different from the last searched query and no request is pending
+        if (value !== lastSearchedQuery && !getIsLoading()) {
             try {
                 const results = await searchActivities(value);
                 setSuggestions(results);
                 setShowSuggestions(true);
                 setHasSuggestions(results.length > 0);
-                setLastSearchedQuery(value);  // Update last searched query
+                setLastSearchedQuery(value);
             } catch (error) {
                 console.error('Error fetching suggestions:', error);
             }
@@ -58,13 +96,6 @@ const ProposeActivity: React.FC = () => {
         }
     };
 
-    const closeNav = () => {
-        // Add your close navigation logic here
-        const sidenav = document.getElementById("mySidenav");
-        if (sidenav) {
-            sidenav.style.width = "0";
-        }
-    };
 
     return (
         <div className="relative w-screen min-h-screen bg-gray-100"> <Headcopied />
@@ -177,7 +208,6 @@ const ProposeActivity: React.FC = () => {
                             placeholder="Entrez votre prénom"
                             required />
 
-                        {/* Row 2 */}
                         <InputField
                             label="Tél / رقم الهاتف"
                             name="tel"
@@ -190,14 +220,12 @@ const ProposeActivity: React.FC = () => {
                             type="email"
                             placeholder="Entrez votre email" />
 
-                        {/* Row 3 */}
                         <SelectField
                             label="Wilaya / الولاية"
                             name="wilaya"
                             options={["Alger", "Oran", "Constantine"]}
                             required />
 
-                        {/* Row 6 (Checkboxes - also can be combined into a single row) */}
                         <div className="flex flex-col gap-3 md:col-span-2">
                             <Checkbox label="Je ne suis pas un robot" name="captcha" />
                             <Checkbox
@@ -205,22 +233,28 @@ const ProposeActivity: React.FC = () => {
                                 name="consent" />
                         </div>
 
-                        {/* Submit Button */}
                         <div className="flex justify-center md:col-span-2">
                             <Button text="Envoyer / إرسال" />
                         </div>
                     </form>
+
+                    <div className="mt-8">
+                        <h3 className="mb-2 font-semibold">Activités sélectionnées :</h3>
+                        <ul>
+                            {selectedActivities.map((activity, index) => (
+                                <li key={index} className="p-1">{activity}</li>
+                            ))}
+                        </ul>
+                    </div>
                 </div>
             </div>
 
-            {/* Chatbot Toggle Button */}
             <img
                 src={bot}
                 alt="Bot"
                 onClick={toggleChatbot}
-                className="fixed w-16 h-16 cursor-pointer md:w-32 md:h-32 bottom-4 right-4"
+                className="fixed w-16 h-16 z-99 cursor-pointer md:w-32 md:h-32 bottom-4 right-4"
             />
-
 
             {isChatbotOpen && (
                 <div className="fixed bottom-0 right-4 z-[9999]">
@@ -229,8 +263,8 @@ const ProposeActivity: React.FC = () => {
             )}
 
 
-</div>
-        
+
+        </div>
     );
 };
 

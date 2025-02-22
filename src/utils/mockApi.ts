@@ -1,10 +1,15 @@
-export const searchActivities = async (query: string): Promise<string[]> => {
+let isLoading = false;
 
+export const searchActivities = async (query: string): Promise<string[]> => {
+    if (isLoading || query.length < 4) {
+        return [];
+    }
 
     try {
+        isLoading = true;
         console.log('Sending request for query:', query);
         
-        const response = await fetch('http://172.20.10.2:5000/noai', {
+        const response = await fetch('http://localhost:5000/noai', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -18,6 +23,9 @@ export const searchActivities = async (query: string): Promise<string[]> => {
         console.error('Error searching activities:', error);
         return [];
     } finally {
+        isLoading = false;
         console.log('Request completed, ready for next request');
     }
 };
+
+export const getIsLoading = () => isLoading;

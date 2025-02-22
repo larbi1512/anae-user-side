@@ -95,3 +95,13 @@ button:focus-visible {
   scrollbar-width: none;
   /* Hides scrollbar in Firefox */
 }
+
+/* Example CSS for markdown content */
+.react-markdown p {
+  margin: 0.5em 0;
+  line-height: 1.4;
+}
+
+.react-markdown strong {
+  font-weight: bold;
+}
