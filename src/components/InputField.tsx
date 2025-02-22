@@ -1,11 +1,11 @@
-import React from "react";
+import React from 'react';
 
 interface InputFieldProps {
     label: string;
     name: string;
-    type?: string;
     placeholder?: string;
     required?: boolean;
+    type?: string;
     value?: string;
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
@@ -13,22 +13,25 @@ interface InputFieldProps {
 const InputField: React.FC<InputFieldProps> = ({
     label,
     name,
+    placeholder,
+    required,
     type = "text",
-    placeholder = "",
-    required = false,
+    value,
+    onChange
 }) => {
     return (
-        <div className="flex flex-col">
-            <label htmlFor={name} className="mb-1 font-medium text-gray-700">
+        <div className="mb-4">
+            <label className="block mb-2 font-medium text-gray-700">
                 {label}
             </label>
             <input
-                id={name}
-                name={name}
                 type={type}
-                required={required}
+                name={name}
                 placeholder={placeholder}
-                className="p-2 text-gray-500 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                required={required}
+                value={value}
+                onChange={onChange}
+                className="w-full p-2 text-gray-600 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
             />
         </div>
     );

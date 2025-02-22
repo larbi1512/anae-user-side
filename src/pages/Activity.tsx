@@ -1,9 +1,17 @@
 import React, { useState } from "react";
+import { useLocation, useNavigate } from 'react-router-dom';
 import Button from "../components/Button";
 import bot from '../assets/images/bot3.svg';
 import ChatbotMini from './chatbot/chatbotmini.js';
+import { searchActivities } from "../utils/mockApi";
+import Logo from "../../public/logo1.png";
+import Navbar from "../components/NavBar.js";
 
 const Activity: React.FC = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const initialSelectedActivities = location.state?.selectedActivities || [];
+    
     const [isChatbotOpen, setIsChatbotOpen] = useState(false);
     const [domain, setDomain] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
@@ -14,7 +22,10 @@ const Activity: React.FC = () => {
         "20011 - Conseil en marketing",
         "30005 - Formation continue en informatique",
     ]);
-    const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+    const [selectedActivities, setSelectedActivities] = useState<string[]>(initialSelectedActivities);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchResults, setSearchResults] = useState<string[]>([]);
+    const [lastSearchedQuery, setLastSearchedQuery] = useState("");  // Add this new state
 
     const toggleChatbot = () => {
         setIsChatbotOpen(!isChatbotOpen);
@@ -24,13 +35,28 @@ const Activity: React.FC = () => {
         setDomain(e.target.value);
     };
 
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(e.target.value);
+    const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        setIsSearching(true);
+
+        // Only search if the query is different from the last searched query
+        if (value !== lastSearchedQuery) {
+            try {
+                const results = await searchActivities(value);
+                setSearchResults(results);
+                setLastSearchedQuery(value);  // Update last searched query
+            } catch (error) {
+                console.error('Error searching activities:', error);
+            }
+        } else if (value.length === 0) {
+            setSearchResults([]);
+            setLastSearchedQuery("");  // Reset last searched query
+        }
+        setIsSearching(false);
     };
 
-    const filteredActivities = activities.filter((activity) =>
-        activity.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredActivities = searchTerm.length >= 2 ? searchResults : activities;
 
     const handleAddActivity = (activity: string) => {
         if (!selectedActivities.includes(activity) && selectedActivities.length < 5) {
@@ -42,7 +68,21 @@ const Activity: React.FC = () => {
         setSelectedActivities((prev) => prev.filter((a) => a !== activity));
     };
 
+    const handleBack = () => {
+        navigate(-1);
+    };
+
     return (
+        <div className="relative w-screen min-h-screen bg-gray-100 ">
+            {/* Top Navigation */}
+            <Navbar />
+
+            {/* Hero Header */}
+            <div className="py-12 text-center text-white bg-green-800">
+                <img src={Logo} alt="logo" className="w-60 h-30 mx-auto mb-6" />
+                <h1 className="mb-2 text-xl font-bold">Ajouter Une Activité a Votre Profile</h1>
+            </div>
+    
         <div className="w-screen ">
             <div className="w-full min-h-screen px-4 bg-gray-100">
                 <div className="w-full p-4 pt-20 mx-auto">
@@ -75,28 +115,62 @@ const Activity: React.FC = () => {
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         {/* Left side: "Liste des activités" + search bar */}
                         <div>
-                            <label className="block mb-2 font-medium text-gray-700">
-                                Rechercher
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="Rechercher..."
-                                value={searchTerm}
-                                onChange={handleSearchChange}
-                                className="w-full p-2 mb-2 text-gray-600 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            />
+                            <div className="flex items-center gap-2 mb-2">
+                                <label className="block font-medium text-gray-700">
+                                    Rechercher
+                                </label>
+                                <div className="relative group">
+                                    <svg 
+                                        className="w-5 h-5 text-gray-400 cursor-help"
+                                        fill="none" 
+                                        stroke="currentColor" 
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round" 
+                                            strokeWidth={2} 
+                                            d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                                        />
+                                    </svg>
+                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity w-48 text-center">
+                                        Recherche optimisée par IA pour de meilleures suggestions
+                                        <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Rechercher..."
+                                    value={searchTerm}
+                                    onChange={handleSearchChange}
+                                    className="w-full p-2 mb-2 text-gray-600 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                />
+                                {isSearching && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                        <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Scrollable list of filtered activities */}
                             <div className="h-64 overflow-y-auto text-gray-600 border border-gray-300 rounded-md">
-                                {filteredActivities.map((activity) => (
-                                    <div
-                                        key={activity}
-                                        className="p-2 cursor-pointer hover:bg-gray-100"
-                                        onClick={() => handleAddActivity(activity)}
-                                    >
-                                        {activity}
+                                {filteredActivities.length > 0 ? (
+                                    filteredActivities.map((activity) => (
+                                        <div
+                                            key={activity}
+                                            className="p-2 cursor-pointer hover:bg-gray-100"
+                                            onClick={() => handleAddActivity(activity)}
+                                        >
+                                            {activity}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-4 text-center text-gray-500">
+                                        {searchTerm.length >= 2 ? "Aucune activité trouvée" : "Commencez à taper pour chercher"}
                                     </div>
-                                ))}
+                                )}
                             </div>
 
                             <div className="mt-4">
@@ -130,7 +204,7 @@ const Activity: React.FC = () => {
 
                     {/* Navigation Buttons */}
                     <div className="flex justify-between mt-6">
-                        <Button text="Précédent" />
+                        <Button text="Précédent" onClick={handleBack} />
                         <Button text="Suivant" />
                     </div>
                 </div>
@@ -149,6 +223,8 @@ const Activity: React.FC = () => {
                 </div>
             )}
         </div>
+        </div>
+
     );
 };
 
