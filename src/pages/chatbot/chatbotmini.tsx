@@ -1,9 +1,4 @@
 import React, { useState } from 'react';
-
-interface MessageProps {
-    text: string;
-    type: 'bot' | 'user';
-}
 import BotIcon from '../../assets/images/botminimized.svg'
 import send from '../../assets/images/send.svg'
 import Voice from '../../assets/images/mingcute_mic-fill.svg'
@@ -15,19 +10,23 @@ import '../../index.css'
 
 
 
+
 interface ChatbotMiniProps {
     onClose: () => void;
 }
+
+interface MessageProps {
+    text: string;
+    type: 'bot' | 'user';
+}
+
+const API_URL = 'http://192.168.98.147:5000/chatbot';
 
 function ChatbotMini({ onClose }: ChatbotMiniProps) {
     const navigate = useNavigate();
     const [messages, setMessages] = useState<MessageProps[]>([
         {
             text: 'Hello, how can I help you?',
-            type: 'bot'
-        },
-        {
-            text: 'I can help you with your queries regarding our products, services, and more.',
             type: 'bot'
         },
     ]);
@@ -40,30 +39,46 @@ function ChatbotMini({ onClose }: ChatbotMiniProps) {
         navigate('/chatbot');
     };
 
-    const handleSendClick = () => {
-        setMessages([
-            ...messages,
-            {
-                text: message,
-                type: 'user'
-            }
-        ])
-
-        setMessage('')
+    const sendQueryToBackend = (query: string) => {
         setLoading(true);
-        setTimeout(() => {
-            setMessages((prevMessages) => [
-                ...prevMessages,
-                {
-                    text: 'Here’s a random response from the bot for testing purposes!',
-                    type: 'bot'
-                }
-            ]);
-            setLoading(false); // Hide loading indicator after bot response
-        }, 1000); 
-        
-    }
-    
+        fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Query: query }),
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error('Network response was not ok');
+                return res.json();
+            })
+            .then((data) => {
+                setMessages((prevMessages) => [
+                    ...prevMessages,
+                    { text: data, type: 'bot' },
+                ]);
+                setLoading(false);
+            })
+            .catch((err) => {
+                console.error(err);
+                setMessages((prevMessages) => [
+                    ...prevMessages,
+                    { text: 'Error: Could not retrieve response.', type: 'bot' },
+                ]);
+                setLoading(false);
+            });
+    };
+
+    const handleSendClick = () => {
+        if (message.trim() === '') return;
+        const userQuery = message;
+        setMessages((prev) => [
+            ...prev,
+            { text: userQuery, type: 'user' },
+        ]);
+        setMessage('');
+        sendQueryToBackend(userQuery);
+    };
+
+
   return (
       <div className=" relative w-[350px] md:w-[500px] h-[400px] rounded-lg bg-[#303030]">
       {/* Header with logo and close button */}
